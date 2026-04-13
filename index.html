@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Darija & Arabic Annotation Helper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f8f7ff;
+      --bg-card:   #ffffff;
+      --bg-tinted: #f3effe;
+      --bg-hover:  #ede8fc;
+      --border:    #e4ddf7;
+      --border-2:  #cec4f0;
+      --muted:     #8b7ab8;
+      --text-dim:  #5c4f80;
+      --text:      #1a1030;
+      --white:     #ffffff;
+      --purple:    #a855f7;
+      --purple-dk: #7c3aed;
+      --pink:      #ec4899;
+      --grad:      linear-gradient(135deg, #a855f7, #ec4899);
+      --grad-btn:  linear-gradient(135deg, #7c3aed, #a855f7);
+      --glow:      0 0 0 3px rgba(168, 85, 247, 0.15);
+      --shadow-sm: 0 1px 3px rgba(120, 80, 200, 0.08);
+      --shadow:    0 4px 16px rgba(120, 80, 200, 0.1);
+      --radius-sm: 6px;
+      --radius:    10px;
+      --radius-lg: 14px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-height: 64px;
+      background: rgba(248, 247, 255, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .header-left { flex: 1; min-width: 0; }
+
+    .site-title {
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+
+    .site-title span {
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    nav { display: flex; gap: 1.5rem; align-items: center; flex-shrink: 0; }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: color 0.15s;
+      white-space: nowrap;
+    }
+
+    nav a:hover { color: var(--purple); }
+
+    /* ── HERO SUBTITLE ── */
+    .hero {
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 2rem 2.5rem;
+    }
+
+    .hero p {
+      color: var(--text-dim);
+      font-size: 0.88rem;
+      max-width: 600px;
+      margin-top: 0.35rem;
+    }
+
+    /* ── ERROR BANNER ── */
+    #error-banner {
+      display: none;
+      background: #fef2f2;
+      color: #be123c;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.75rem 2rem;
+      border-bottom: 1px solid #fecdd3;
+    }
+
+    /* ── MAIN TOOL ── */
+    .tool-section { padding: 2rem; }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 768px) {
+      .tool-grid { grid-template-columns: 1fr; }
+    }
+
+    .col-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      padding: 0.875rem 1rem;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      border-radius: var(--radius);
+      line-height: 1.6;
+      box-shadow: var(--shadow-sm);
+    }
+
+    textarea:focus {
+      border-color: var(--purple);
+      box-shadow: var(--glow);
+    }
+
+    textarea::placeholder { color: var(--border-2); }
+
+    #input-text { min-height: 220px; }
+    #output-text {
+      min-height: 220px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.76rem;
+      background: var(--bg-tinted);
+    }
+
+    textarea.shake {
+      animation: shake 0.35s ease;
+      border-color: #f43f5e !important;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-6px); }
+      40%       { transform: translateX(6px); }
+      60%       { transform: translateX(-4px); }
+      80%       { transform: translateX(4px); }
+    }
+
+    .example-link {
+      display: inline-block;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--purple);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      padding: 0;
+      text-decoration: underline;
+      text-decoration-color: rgba(168, 85, 247, 0.3);
+      transition: color 0.15s, text-decoration-color 0.15s;
+    }
+
+    .example-link:hover { color: var(--pink); text-decoration-color: rgba(236, 72, 153, 0.4); }
+
+    /* ── OPTIONS ROW ── */
+    .options-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin: 1rem 0;
+      align-items: flex-start;
+    }
+
+    .option-group { display: flex; flex-direction: column; gap: 0.35rem; }
+
+    .option-label {
+      font-size: 0.63rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .toggle-group {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--bg-card);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.45rem 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+
+    .toggle-btn + .toggle-btn { border-left: 1px solid var(--border); }
+
+    .toggle-btn.active {
+      background: var(--grad);
+      color: var(--white);
+    }
+
+    .toggle-btn:not(.active):hover { background: var(--bg-tinted); color: var(--purple); }
+
+    /* ── INLINE ERROR ── */
+    .inline-error {
+      font-size: 0.75rem;
+      color: #e11d48;
+      margin-top: 0.4rem;
+      min-height: 1.1em;
+    }
+
+    /* ── ANNOTATE BUTTON ── */
+    #annotate-btn {
+      width: 100%;
+      background: var(--grad-btn);
+      color: var(--white);
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 0.9rem 1rem;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      border-radius: var(--radius);
+      transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+    }
+
+    #annotate-btn:hover:not(:disabled) {
+      opacity: 0.92;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.45);
+    }
+    #annotate-btn:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
+    #annotate-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .powered-by {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-top: 0.6rem;
+      text-align: center;
+    }
+
+    /* ── OUTPUT ACTION BUTTONS ── */
+    .output-actions {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .action-btn:hover { background: var(--bg-tinted); border-color: var(--purple); color: var(--purple); }
+    .action-btn:active { background: var(--bg-hover); }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.5rem;
+      margin-top: 1rem;
+      padding: 0.85rem 1rem;
+      background: var(--bg-tinted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .stat-item { display: flex; flex-direction: column; gap: 0.25rem; }
+
+    .stat-label {
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .stat-value {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      align-items: center;
+    }
+
+    .stat-value.empty { color: var(--border-2); font-weight: 400; }
+
+    /* ── LANGUAGE BADGES ── */
+    .lang-badge {
+      display: inline-block;
+      font-size: 0.67rem;
+      font-weight: 600;
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+    }
+    .lang-badge-0 { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; }
+    .lang-badge-1 { background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; }
+    .lang-badge-2 { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .lang-badge-3 { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .lang-badge-4 { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .lang-badge-5 { background: #fff1f2; color: #9f1239; border: 1px solid #fecdd3; }
+
+    /* ── PULSING PLACEHOLDER ── */
+    @keyframes pulse-opacity {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 0.8; }
+    }
+
+    textarea.processing { animation: pulse-opacity 1.2s ease-in-out infinite; }
+
+    /* ── HOW IT WORKS ── */
+    #how-it-works {
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem;
+      background: var(--bg-card);
+    }
+
+    .section-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 2rem;
+    }
+
+    .steps-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 640px) {
+      .steps-row { grid-template-columns: 1fr; }
+    }
+
+    .step {
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      border-radius: var(--radius-lg);
+      background: var(--bg-tinted);
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+
+    .step:hover {
+      border-color: var(--border-2);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .step-number {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 0.75rem;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .step-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.4rem;
+    }
+
+    .step-desc {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      line-height: 1.55;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      background: var(--bg-card);
+    }
+
+    .footer-left {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .footer-left strong { color: var(--text); font-weight: 600; }
+
+    .footer-links { display: flex; gap: 1rem; align-items: center; }
+
+    .footer-links a {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .footer-links a:hover { color: var(--purple); }
+
+    .footer-note {
+      width: 100%;
+      font-size: 0.7rem;
+      color: var(--border-2);
+    }
+
+    /* ── COPY FLASH ── */
+    .copy-flash { color: #059669 !important; border-color: #059669 !important; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════ -->
+<header>
+  <div class="header-left">
+    <div class="site-title">Darija &amp; <span>Arabic</span> Annotation Helper</div>
+  </div>
+  <nav>
+    <a href="#how-it-works">How it works</a>
+    <a href="https://github.com/Jenniyaa" target="_blank" rel="noopener">GitHub</a>
+  </nav>
+</header>
+
+<!-- ════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════ -->
+<div class="hero">
+  <p>Paste raw Arabic or Darija text. Get structured annotation output ready for any NLP platform.</p>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     ERROR BANNER
+════════════════════════════════════════════════ -->
+<div id="error-banner"></div>
+
+<!-- ════════════════════════════════════════════════
+     MAIN TOOL
+════════════════════════════════════════════════ -->
+<section class="tool-section">
+  <div class="tool-grid">
+
+    <!-- LEFT COLUMN -->
+    <div class="col-left">
+      <div class="col-label">Raw Text Input</div>
+
+      <textarea
+        id="input-text"
+        placeholder="Paste one entry or multiple entries — one per line.&#10;Supports Arabic, Darija, French, or mixed text."
+        spellcheck="false"
+        dir="auto"
+      ></textarea>
+
+      <button class="example-link" id="example-btn">Try an example</button>
+
+      <div class="options-row">
+        <!-- Export Format -->
+        <div class="option-group">
+          <div class="option-label">Export Format</div>
+          <div class="toggle-group" id="format-toggle">
+            <button class="toggle-btn active" data-value="json">JSON</button>
+            <button class="toggle-btn" data-value="csv">CSV</button>
+          </div>
+        </div>
+
+        <!-- Batch Mode -->
+        <div class="option-group">
+          <div class="option-label">Batch Mode</div>
+          <div class="toggle-group" id="batch-toggle">
+            <button class="toggle-btn active" data-value="single">Single entry</button>
+            <button class="toggle-btn" data-value="multiple">Multiple — one per line</button>
+          </div>
+        </div>
+
+        <!-- Annotation Level -->
+        <div class="option-group">
+          <div class="option-label">Annotation Level</div>
+          <div class="toggle-group" id="level-toggle">
+            <button class="toggle-btn active" data-value="basic">Basic</button>
+            <button class="toggle-btn" data-value="detailed">Detailed</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="inline-error" id="input-error"></div>
+
+      <button id="annotate-btn">ANNOTATE</button>
+      <div class="powered-by">Powered by Groq API &middot; llama-3.1-8b-instant</div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col-right">
+      <div class="col-label">Structured Output</div>
+
+      <textarea
+        id="output-text"
+        readonly
+        placeholder="Your annotated output will appear here..."
+        spellcheck="false"
+      ></textarea>
+
+      <div class="output-actions">
+        <button class="action-btn" id="copy-btn">Copy to Clipboard</button>
+        <button class="action-btn" id="export-json-btn">Export JSON</button>
+        <button class="action-btn" id="export-csv-btn">Export CSV</button>
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat-item">
+          <div class="stat-label">Total Entries</div>
+          <div class="stat-value empty" id="stat-total">—</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Languages Detected</div>
+          <div class="stat-value empty" id="stat-langs">—</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Avg Confidence</div>
+          <div class="stat-value empty" id="stat-conf">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════
+     HOW IT WORKS
+════════════════════════════════════════════════ -->
+<section id="how-it-works">
+  <div class="section-title">How it works</div>
+  <div class="steps-row">
+    <div class="step">
+      <div class="step-number">01</div>
+      <div class="step-title">Paste your raw text</div>
+      <div class="step-desc">Arabic, Darija, French, or mixed — single entry or batch. Franco-Arab and code-switched text are fully supported.</div>
+    </div>
+    <div class="step">
+      <div class="step-number">02</div>
+      <div class="step-title">Choose your settings</div>
+      <div class="step-desc">Select annotation level (Basic or Detailed) and export format. Basic returns sentiment and language. Detailed adds intent, topics, flags, and notes.</div>
+    </div>
+    <div class="step">
+      <div class="step-number">03</div>
+      <div class="step-title">Copy or export</div>
+      <div class="step-desc">Download your structured output as JSON or CSV — ready for Label Studio, UHRS, Scale AI, or Supabase.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-left">
+    Built by <strong>Fatima Zohra Hligue</strong>
+  </div>
+  <div class="footer-links">
+    <a href="https://www.linkedin.com/in/fatima-zohra-hligue/" target="_blank" rel="noopener">LinkedIn</a>
+    <a href="https://github.com/Jenniyaa" target="_blank" rel="noopener">GitHub</a>
+  </div>
+  <div class="footer-note">For Arabic &amp; Darija NLP annotation workflows</div>
+</footer>
+
+
+<!-- ════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════ -->
+<script src="config.js"></script>
+<script>
+  /* ── CONFIG — GROQ_API_KEY is loaded from config.js (gitignored) ── */
+  const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
+  const MODEL = "llama-3.1-8b-instant";
+
+  const SYSTEM_PROMPT = `You are a professional NLP data annotation specialist with deep expertise in Arabic, Moroccan Darija, and French-Arabic code-switching.
+
+Your job is to process text entries and return structured annotation data that meets professional NLP dataset standards.
+
+For BASIC mode, return only: id, original_text, clean_text, detected_language, sentiment, sentiment_confidence.
+
+For DETAILED mode, return all fields.
+
+For each entry, return a JSON object with exactly these fields:
+
+{
+  "id": [integer starting from 1],
+  "original_text": [exact input text, unchanged],
+  "clean_text": [normalised version: fix obvious typos, standardise Darija Latin transliteration if present, remove noise characters like repeated punctuation or decorative symbols, preserve meaning],
+  "detected_language": [exactly one of: "Arabic", "Darija", "French", "English", "Mixed-AR-FR", "Mixed-DA-FR", "Mixed-DA-AR", "Mixed-DA-EN", "Other"],
+  "sentiment": [exactly one of: "Positive", "Negative", "Neutral", "Mixed"],
+  "sentiment_confidence": [exactly one of: "High", "Medium", "Low"],
+  "intent": [exactly one of: "Opinion", "Question", "Request", "Statement", "Emotion", "Humour", "Sarcasm"],
+  "topics": [JSON array of up to 3 short topic tags relevant to the text content, e.g. ["politics", "youth", "education"]],
+  "flags": [JSON array — include any applicable: "code-switching", "offensive", "ambiguous", "dialect-variant", "slang", "transliterated", "irony", "incomplete". Empty array if none apply.],
+  "annotation_note": [one short sentence flagging any ambiguity, edge case, or anything a human reviewer should check. Empty string if none.]
+}
+
+Rules:
+- Return ONLY a valid JSON array. No explanation, no preamble, no markdown, no code blocks.
+- Every field must be present in every object, even if the value is an empty string or empty array.
+- Never guess — if sentiment is genuinely ambiguous, use "Mixed" and explain in annotation_note.
+- Darija written in Latin script (Franco-Arab) is common — handle it correctly, do not treat it as French.
+- Code-switching between Darija and French in the same sentence is normal — flag it and detect the dominant language.
+- If a text is offensive or contains hate speech, still annotate it accurately and add "offensive" to flags.
+
+Critical guidance for Darija annotation:
+- Darija (especially Franco-Arab) is highly colloquial. Many words that look neutral have vulgar, sarcastic, or emotionally charged meanings that differ completely from their Modern Standard Arabic roots. Do NOT assume MSA meanings apply to Darija words.
+- When annotating Darija text, default to "Medium" or "Low" for sentiment_confidence — never "High" — unless the sentiment is completely obvious (e.g. explicit praise or explicit insult with zero ambiguity).
+- Short informal Darija expressions are almost always emotional (frustration, excitement, sarcasm, humor). They are rarely neutral factual statements. If the text is short, informal, and uses slang or exclamations, lean toward an emotional sentiment rather than "Neutral".
+- When in doubt between "Neutral" and "Negative" for Darija slang, choose "Negative" and add "ambiguous" to flags with an annotation_note explaining the uncertainty.
+- Always add "slang" to flags when the text uses informal Darija vocabulary, Franco-Arab abbreviations, or colloquial expressions.
+- Exclamatory structures like "wa ela...", "ya lah...", "wili...", "a sahbi..." signal strong emotion — never annotate these as Neutral with High confidence.`;
+
+  const SAMPLE_TEXTS = [
+    "mzyan bzzaf had lfilm, tbarkallah 3la les acteurs",
+    "هاد الحكومة ما كتهتمش بالشباب والله",
+    "j'suis trop d'accord avec ce qu'il a dit, surtout la partie sur l'éducation"
+  ].join("\n");
+
+  /* ── STATE ── */
+  let exportFormat   = "json";
+  let batchMode      = "single";
+  let annotationLevel = "basic";
+  let lastJsonData   = null;
+
+  /* ── ELEMENT REFS ── */
+  const inputEl      = document.getElementById("input-text");
+  const outputEl     = document.getElementById("output-text");
+  const annotateBtn  = document.getElementById("annotate-btn");
+  const copyBtn      = document.getElementById("copy-btn");
+  const exportJsonBtn = document.getElementById("export-json-btn");
+  const exportCsvBtn  = document.getElementById("export-csv-btn");
+  const errorBanner  = document.getElementById("error-banner");
+  const inputError   = document.getElementById("input-error");
+  const exampleBtn   = document.getElementById("example-btn");
+
+  const statTotal = document.getElementById("stat-total");
+  const statLangs = document.getElementById("stat-langs");
+  const statConf  = document.getElementById("stat-conf");
+
+  /* ── TOGGLE GROUPS ── */
+  function wireToggle(groupId, onChange) {
+    const group = document.getElementById(groupId);
+    group.querySelectorAll(".toggle-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        group.querySelectorAll(".toggle-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        onChange(btn.dataset.value);
+      });
+    });
+  }
+
+  wireToggle("format-toggle",  v => { exportFormat    = v; });
+  wireToggle("batch-toggle",   v => { batchMode        = v; });
+  wireToggle("level-toggle",   v => { annotationLevel  = v; });
+
+  /* ── EXAMPLE ── */
+  exampleBtn.addEventListener("click", () => {
+    inputEl.value = SAMPLE_TEXTS;
+    // Switch to multiple mode automatically
+    document.getElementById("batch-toggle").querySelectorAll(".toggle-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.value === "multiple");
+    });
+    batchMode = "multiple";
+    inputError.textContent = "";
+    inputEl.focus();
+  });
+
+  /* ── BUILD USER MESSAGE ── */
+  function buildUserMessage(text, level, mode) {
+    const levelLabel = level === "basic" ? "BASIC" : "DETAILED";
+    if (mode === "single") {
+      return `Annotate this text entry in ${levelLabel} mode:\n${text.trim()}`;
+    } else {
+      const entries = text.trim().split("\n").filter(l => l.trim() !== "");
+      const numbered = entries.join("\n");
+      return `Annotate each of the following entries in ${levelLabel} mode. Each entry is on a new line. Return one JSON object per entry in a JSON array.\n\nEntries:\n${numbered}`;
+    }
+  }
+
+  /* ── JSON → CSV ── */
+  function jsonToCsv(data) {
+    const headers = ["id","original_text","clean_text","detected_language","sentiment",
+                     "sentiment_confidence","intent","topics","flags","annotation_note"];
+    const escape = val => {
+      if (Array.isArray(val)) val = val.join("|");
+      return `"${String(val ?? "").replace(/"/g, '""')}"`;
+    };
+    const rows = data.map(obj => headers.map(h => escape(obj[h])).join(","));
+    return [headers.map(h => `"${h}"`).join(","), ...rows].join("\r\n");
+  }
+
+  /* ── STATS ── */
+  function updateStats(data) {
+    if (!Array.isArray(data) || data.length === 0) {
+      [statTotal, statLangs, statConf].forEach(el => {
+        el.textContent = "—";
+        el.classList.add("empty");
+      });
+      return;
+    }
+
+    statTotal.textContent = data.length;
+    statTotal.classList.remove("empty");
+
+    const langs = [...new Set(data.map(d => d.detected_language).filter(Boolean))];
+    if (langs.length > 0) {
+      statLangs.innerHTML = langs.map((l, i) =>
+        `<span class="lang-badge lang-badge-${i % 6}">${l}</span>`
+      ).join("");
+      statLangs.classList.remove("empty");
+    } else {
+      statLangs.textContent = "—";
+      statLangs.classList.add("empty");
+    }
+
+    const confMap = { High: 3, Medium: 2, Low: 1 };
+    const confCounts = { High: 0, Medium: 0, Low: 0 };
+    data.forEach(d => { if (d.sentiment_confidence in confCounts) confCounts[d.sentiment_confidence]++; });
+    const dominant = Object.entries(confCounts).sort((a, b) => b[1] - a[1])[0];
+    statConf.textContent = dominant && dominant[1] > 0 ? dominant[0] : "—";
+    statConf.classList.toggle("empty", !dominant || dominant[1] === 0);
+  }
+
+  /* ── SHOW / HIDE ERROR BANNER ── */
+  function showBanner(msg) {
+    errorBanner.textContent = msg;
+    errorBanner.style.display = "block";
+  }
+  function hideBanner() {
+    errorBanner.style.display = "none";
+    errorBanner.textContent = "";
+  }
+
+  /* ── SET LOADING STATE ── */
+  function setLoading(on) {
+    annotateBtn.disabled = on;
+    annotateBtn.textContent = on ? "Annotating..." : "ANNOTATE";
+    if (on) {
+      outputEl.value = "Processing your text...";
+      outputEl.classList.add("processing");
+    } else {
+      outputEl.classList.remove("processing");
+    }
+  }
+
+  /* ── MAIN ANNOTATE ── */
+  annotateBtn.addEventListener("click", async () => {
+    hideBanner();
+    inputError.textContent = "";
+
+    const rawText = inputEl.value.trim();
+    if (!rawText) {
+      inputEl.classList.add("shake");
+      inputEl.addEventListener("animationend", () => inputEl.classList.remove("shake"), { once: true });
+      inputError.textContent = "Please enter text to annotate.";
+      return;
+    }
+
+    if (!GROQ_API_KEY || GROQ_API_KEY === "your-groq-api-key-here") {
+      showBanner("API key missing or invalid. Add your Groq API key to the GROQ_API_KEY constant.");
+      return;
+    }
+
+    setLoading(true);
+    lastJsonData = null;
+
+    const userMessage = buildUserMessage(rawText, annotationLevel, batchMode);
+
+    try {
+      const res = await fetch(GROQ_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 2000,
+          temperature: 0.1,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user",   content: userMessage }
+          ]
+        })
+      });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const msg = errBody?.error?.message || `HTTP ${res.status}`;
+        if (res.status === 401) {
+          showBanner("API key missing or invalid. Add your Groq API key to the GROQ_API_KEY constant.");
+        } else {
+          showBanner(`API error: ${msg}`);
+        }
+        outputEl.value = "";
+        updateStats([]);
+        return;
+      }
+
+      const json = await res.json();
+      const rawContent = json?.choices?.[0]?.message?.content ?? "";
+
+      let parsed;
+      try {
+        // Strip any accidental markdown fences
+        const cleaned = rawContent
+          .replace(/^```(?:json)?\s*/i, "")
+          .replace(/\s*```\s*$/, "")
+          .trim();
+        parsed = JSON.parse(cleaned);
+        if (!Array.isArray(parsed)) parsed = [parsed];
+      } catch {
+        showBanner("Could not parse model output. Try again or reduce the number of entries.");
+        outputEl.value = rawContent;
+        updateStats([]);
+        return;
+      }
+
+      lastJsonData = parsed;
+
+      if (exportFormat === "json") {
+        outputEl.value = JSON.stringify(parsed, null, 2);
+      } else {
+        outputEl.value = jsonToCsv(parsed);
+      }
+
+      updateStats(parsed);
+
+    } catch (err) {
+      showBanner(`Network error: ${err.message}`);
+      outputEl.value = "";
+      updateStats([]);
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  /* ── COPY TO CLIPBOARD ── */
+  copyBtn.addEventListener("click", async () => {
+    const content = outputEl.value;
+    if (!content || content === "Processing your text...") return;
+    try {
+      await navigator.clipboard.writeText(content);
+      copyBtn.textContent = "Copied!";
+      copyBtn.classList.add("copy-flash");
+      setTimeout(() => {
+        copyBtn.textContent = "Copy to Clipboard";
+        copyBtn.classList.remove("copy-flash");
+      }, 1800);
+    } catch {
+      outputEl.select();
+      document.execCommand("copy");
+    }
+  });
+
+  /* ── DOWNLOAD HELPER ── */
+  function download(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function timestamp() {
+    return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  }
+
+  /* ── EXPORT JSON ── */
+  exportJsonBtn.addEventListener("click", () => {
+    if (!lastJsonData) return;
+    download(JSON.stringify(lastJsonData, null, 2), `annotation_output_${timestamp()}.json`, "application/json");
+  });
+
+  /* ── EXPORT CSV ── */
+  exportCsvBtn.addEventListener("click", () => {
+    if (!lastJsonData) return;
+    download(jsonToCsv(lastJsonData), `annotation_output_${timestamp()}.csv`, "text/csv");
+  });
+</script>
+</body>
+</html>
